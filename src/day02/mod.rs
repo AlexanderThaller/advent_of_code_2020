@@ -191,10 +191,12 @@ mod bench {
 
     #[bench]
     fn part_1(b: &mut Bencher) {
+        let mut tester = super::TobogganTester::new();
+
         b.iter(|| {
             super::INPUT
                 .iter()
-                .filter_map(|input| super::is_valid_password_sled_rental(input).ok())
+                .filter_map(|input| tester.test(input).ok())
                 .filter(|is_valid| *is_valid)
                 .count();
         });
@@ -202,10 +204,13 @@ mod bench {
 
     #[bench]
     fn part_2(b: &mut Bencher) {
+        let mut tester = super::SledTester::new();
+
         b.iter(|| {
             super::INPUT
                 .iter()
-                .filter_map(|input| super::is_valid_password_toboggan_rental(input).ok())
+                .filter_map(|input| tester.test(input).ok())
+                .into_iter()
                 .filter(|is_valid| *is_valid)
                 .count();
         });
