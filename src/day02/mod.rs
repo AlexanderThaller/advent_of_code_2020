@@ -2,11 +2,16 @@ use thiserror::Error;
 
 mod input;
 mod password_policy;
+mod tester;
 
 use input::INPUT;
 use password_policy::{
     sled_rental::PasswordPolicy as PasswordPolicySledRental,
     toboggan_rental::PasswordPolicy as PasswordPolicyTobogganRental,
+};
+use tester::{
+    SledTester,
+    TobogganTester,
 };
 
 #[cfg(test)]
@@ -50,9 +55,11 @@ pub fn run() -> Result<(), Error> {
 }
 
 fn part_1() -> Result<(), Error> {
+    let mut tester = SledTester::new();
+
     let valid_entries = INPUT
         .iter()
-        .map(|input| is_valid_password_sled_rental(input))
+        .map(|input| tester.test(input))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .filter(|is_valid| *is_valid)
@@ -64,9 +71,11 @@ fn part_1() -> Result<(), Error> {
 }
 
 fn part_2() -> Result<(), Error> {
+    let mut tester = TobogganTester::new();
+
     let valid_entries = INPUT
         .iter()
-        .map(|input| is_valid_password_toboggan_rental(input))
+        .map(|input| tester.test(input))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .filter(|is_valid| *is_valid)
