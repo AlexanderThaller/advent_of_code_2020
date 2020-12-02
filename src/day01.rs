@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 const WANTED_SUM: usize = 2020;
 
 const INPUT_FIRST_PART: [usize; 200] = [
@@ -23,6 +25,7 @@ pub fn run() {
 
 fn part_1() {
     let (first, second) = find_two_entries(&INPUT_FIRST_PART).unwrap();
+
     println!(
         "day_01::part_1: {} + {} = {}",
         first,
@@ -44,29 +47,18 @@ fn part_2() {
 }
 
 fn find_two_entries(entries: &[usize]) -> Option<(&usize, &usize)> {
-    for first in entries {
-        for second in entries {
-            if first + second == WANTED_SUM {
-                return Some((first, second));
-            }
-        }
-    }
-
-    None
+    entries
+        .iter()
+        .tuple_combinations()
+        .find(|(first, second)| *first + *second == WANTED_SUM)
 }
 
 fn find_three_entries(entries: &[usize]) -> Option<(&usize, &usize, &usize)> {
-    for first in entries {
-        for second in entries {
-            for third in entries {
-                if first + second + third == WANTED_SUM {
-                    return Some((first, second, third));
-                }
-            }
-        }
-    }
-
-    None
+    entries
+        .iter()
+        .combinations(3)
+        .map(|comb| (comb[0], comb[1], comb[2]))
+        .find(|(first, second, third)| *first + *second + *third == WANTED_SUM)
 }
 
 #[cfg(test)]
@@ -85,6 +77,22 @@ mod test {
     fn find_three_entries() {
         let expected = Some((&979, &366, &675));
         let got = super::find_three_entries(&INPUT);
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn part_1() {
+        let expected = Some((&1184, &836));
+        let got = super::find_two_entries(&super::INPUT_FIRST_PART);
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn part_2() {
+        let expected = Some((&1614, &210, &196));
+        let got = super::find_three_entries(&super::INPUT_FIRST_PART);
 
         assert_eq!(expected, got);
     }
