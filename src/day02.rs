@@ -1,14 +1,28 @@
-use password_policy::PasswordPolicy;
+use password_policy::{
+    sled_rental::PasswordPolicy as PasswordPolicySledRental,
+    toboggan_rental::PasswordPolicy as PasswordPolicyTobogganRental,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum Error {}
 
 #[cfg(test)]
-const TEST_INPUT: [(&str, Result<bool, Error>); 3] = [
+const TEST_INPUT_SLED_RENTAL: [(&str, Result<bool, Error>); 3] = [
     ("1-3 a: abcde", Ok(true)),
     ("1-3 b: cdefg", Ok(false)),
     ("2-9 c: ccccccccc", Ok(true)),
+];
+
+#[cfg(test)]
+const TEST_INPUT_TOBOGGAN_RENTAL: [(&str, Result<bool, Error>); 4] = [
+    ("1-3 a: abcde", Ok(true)),
+    ("1-3 b: cdefg", Ok(false)),
+    ("2-9 c: ccccccccc", Ok(false)),
+    // Case when the first index does not contain the character. In that case we want to check the
+    // not_contains_index if the character exists. If it the character exists in the
+    // not_contains_index the password is valid.
+    ("2-9 c: cdccccccc", Ok(true)),
 ];
 
 const INPUT: [&str; 1000] = [
@@ -1015,13 +1029,16 @@ const INPUT: [&str; 1000] = [
 ];
 
 pub fn run() -> Result<(), Error> {
-    part_1()
+    part_1()?;
+    part_2()?;
+
+    Ok(())
 }
 
 fn part_1() -> Result<(), Error> {
     let valid_entries = INPUT
         .iter()
-        .filter_map(|input| is_valid_password(input).ok())
+        .filter_map(|input| is_valid_password_sled_rental(input).ok())
         .filter(|is_valid| *is_valid)
         .count();
 
@@ -1030,9 +1047,32 @@ fn part_1() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn is_valid_password(entry: &str) -> Result<bool, Error> {
+fn part_2() -> Result<(), Error> {
+    let valid_entries = INPUT
+        .iter()
+        .filter_map(|input| is_valid_password_toboggan_rental(input).ok())
+        .filter(|is_valid| *is_valid)
+        .count();
+
+    println!("day_02::part_2: valid_entries = {}", valid_entries);
+
+    Ok(())
+}
+
+pub fn is_valid_password_sled_rental(entry: &str) -> Result<bool, Error> {
     let mut policy_password_split = entry.split(':');
-    let policy: PasswordPolicy = policy_password_split.next().unwrap().parse().unwrap();
+    let policy: PasswordPolicySledRental = policy_password_split.next().unwrap().parse().unwrap();
+    let password = policy_password_split.next().unwrap().trim();
+
+    let valid = policy.is_valid_password(password);
+
+    Ok(valid)
+}
+
+pub fn is_valid_password_toboggan_rental(entry: &str) -> Result<bool, Error> {
+    let mut policy_password_split = entry.split(':');
+    let policy: PasswordPolicyTobogganRental =
+        policy_password_split.next().unwrap().parse().unwrap();
     let password = policy_password_split.next().unwrap().trim();
 
     let valid = policy.is_valid_password(password);
@@ -1043,9 +1083,21 @@ pub fn is_valid_password(entry: &str) -> Result<bool, Error> {
 #[cfg(test)]
 mod test {
     #[test]
-    fn is_valid_password() {
-        for (input, expected) in super::TEST_INPUT.iter() {
-            let got = super::is_valid_password(input);
+    fn is_valid_password_sled_rental() {
+        for (input, expected) in super::TEST_INPUT_SLED_RENTAL.iter() {
+            let got = super::is_valid_password_sled_rental(input);
+
+            println!("input = {}", input);
+            assert_eq!(*expected, got);
+        }
+    }
+
+    #[test]
+    fn is_valid_password_toboggan_rental() {
+        for (input, expected) in super::TEST_INPUT_TOBOGGAN_RENTAL.iter() {
+            let got = super::is_valid_password_toboggan_rental(input);
+
+            println!("input = {}", input);
             assert_eq!(*expected, got);
         }
     }
@@ -1055,7 +1107,19 @@ mod test {
         let expected = 591;
         let got = super::INPUT
             .iter()
-            .filter_map(|input| super::is_valid_password(input).ok())
+            .filter_map(|input| super::is_valid_password_sled_rental(input).ok())
+            .filter(|is_valid| *is_valid)
+            .count();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn part_2() {
+        let expected = 335;
+        let got = super::INPUT
+            .iter()
+            .filter_map(|input| super::is_valid_password_toboggan_rental(input).ok())
             .filter(|is_valid| *is_valid)
             .count();
 
@@ -1063,76 +1127,203 @@ mod test {
     }
 }
 
+#[cfg(test)]
+mod bench {
+    use test::Bencher;
+
+    #[bench]
+    fn is_valid_password_sled_rental(b: &mut Bencher) {
+        b.iter(|| {
+            super::is_valid_password_sled_rental("1-3 a: abcde").unwrap();
+        });
+    }
+
+    #[bench]
+    fn is_valid_password_toboggan_rental(b: &mut Bencher) {
+        b.iter(|| {
+            super::is_valid_password_toboggan_rental("1-3 a: abcde").unwrap();
+        });
+    }
+
+    #[bench]
+    fn part_1(b: &mut Bencher) {
+        b.iter(|| {
+            super::INPUT
+                .iter()
+                .filter_map(|input| super::is_valid_password_sled_rental(input).ok())
+                .filter(|is_valid| *is_valid)
+                .count();
+        });
+    }
+
+    #[bench]
+    fn part_2(b: &mut Bencher) {
+        b.iter(|| {
+            super::INPUT
+                .iter()
+                .filter_map(|input| super::is_valid_password_toboggan_rental(input).ok())
+                .filter(|is_valid| *is_valid)
+                .count();
+        });
+    }
+}
+
 mod password_policy {
-    use thiserror::Error;
+    pub(super) mod sled_rental {
+        use thiserror::Error;
 
-    #[derive(Debug, Error, Eq, PartialEq)]
-    pub enum Error {}
+        #[derive(Debug, Error, Eq, PartialEq)]
+        pub enum Error {}
 
-    #[derive(Debug, Eq, PartialEq)]
-    pub struct PasswordPolicy {
-        min: usize,
-        max: usize,
-        character: char,
-    }
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct PasswordPolicy {
+            min: usize,
+            max: usize,
+            character: char,
+        }
 
-    impl PasswordPolicy {
-        pub fn is_valid_password(&self, password: &str) -> bool {
-            let occurences = password.chars().filter(|ch| *ch == self.character).count();
+        impl PasswordPolicy {
+            pub fn is_valid_password(&self, password: &str) -> bool {
+                let occurences = password.chars().filter(|ch| *ch == self.character).count();
 
-            if occurences < self.min {
-                return false;
+                if occurences < self.min {
+                    return false;
+                }
+
+                if occurences > self.max {
+                    return false;
+                }
+
+                true
             }
+        }
 
-            if occurences > self.max {
-                return false;
+        impl std::str::FromStr for PasswordPolicy {
+            type Err = Error;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                let mut minmax_character_split = s.split(' ');
+                let mut minmax = minmax_character_split.next().unwrap().split('-');
+                let character = minmax_character_split
+                    .next()
+                    .unwrap()
+                    .chars()
+                    .next()
+                    .unwrap();
+
+                let min = minmax.next().unwrap().parse().unwrap();
+                let max = minmax.next().unwrap().parse().unwrap();
+
+                Ok(Self {
+                    min,
+                    max,
+                    character,
+                })
             }
+        }
 
-            true
+        #[cfg(test)]
+        mod test {
+            use std::str::FromStr;
+
+            #[test]
+            fn from_str() {
+                const INPUT: &str = "1-3 a";
+
+                let expected = Ok(super::PasswordPolicy {
+                    min: 1,
+                    max: 3,
+                    character: 'a',
+                });
+
+                let got = super::PasswordPolicy::from_str(INPUT);
+
+                assert_eq!(expected, got);
+            }
         }
     }
 
-    impl std::str::FromStr for PasswordPolicy {
-        type Err = Error;
+    pub(super) mod toboggan_rental {
+        use thiserror::Error;
 
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let mut minmax_character_split = s.split(' ');
-            let mut minmax = minmax_character_split.next().unwrap().split('-');
-            let character = minmax_character_split
-                .next()
-                .unwrap()
-                .chars()
-                .next()
-                .unwrap();
+        #[derive(Debug, Error, Eq, PartialEq)]
+        pub enum Error {}
 
-            let min = minmax.next().unwrap().parse().unwrap();
-            let max = minmax.next().unwrap().parse().unwrap();
-
-            Ok(Self {
-                min,
-                max,
-                character,
-            })
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct PasswordPolicy {
+            contains_index: usize,
+            not_contains_index: usize,
+            character: char,
         }
-    }
 
-    #[cfg(test)]
-    mod test {
-        use std::str::FromStr;
+        impl PasswordPolicy {
+            pub fn is_valid_password(&self, password: &str) -> bool {
+                let chars = password.chars().collect::<Vec<_>>();
 
-        #[test]
-        fn from_str() {
-            const INPUT: &str = "1-3 a";
+                let contains_char = chars.get(self.contains_index).unwrap();
+                let not_contains_char = chars.get(self.not_contains_index).unwrap();
 
-            let expected = Ok(super::PasswordPolicy {
-                min: 1,
-                max: 3,
-                character: 'a',
-            });
+                let out = |contains_char: &char, not_contains_char: &char| -> bool {
+                    let contains = *contains_char == self.character;
+                    let not_contains = *not_contains_char != self.character;
 
-            let got = super::PasswordPolicy::from_str(INPUT);
+                    if contains && not_contains {
+                        return true;
+                    }
 
-            assert_eq!(expected, got);
+                    if !contains && !not_contains {
+                        return true;
+                    }
+
+                    false
+                }(contains_char, not_contains_char);
+
+                out
+            }
+        }
+
+        impl std::str::FromStr for PasswordPolicy {
+            type Err = Error;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                let mut index_character_split = s.split(' ');
+                let mut index = index_character_split.next().unwrap().split('-');
+                let character = index_character_split
+                    .next()
+                    .unwrap()
+                    .chars()
+                    .next()
+                    .unwrap();
+
+                let contains_index = index.next().unwrap().parse::<usize>().unwrap() - 1;
+                let not_contains_index = index.next().unwrap().parse::<usize>().unwrap() - 1;
+
+                Ok(Self {
+                    contains_index,
+                    not_contains_index,
+                    character,
+                })
+            }
+        }
+
+        #[cfg(test)]
+        mod test {
+            use std::str::FromStr;
+
+            #[test]
+            fn from_str() {
+                const INPUT: &str = "1-3 a";
+
+                let expected = Ok(super::PasswordPolicy {
+                    contains_index: 0,
+                    not_contains_index: 2,
+                    character: 'a',
+                });
+
+                let got = super::PasswordPolicy::from_str(INPUT);
+
+                assert_eq!(expected, got);
+            }
         }
     }
 }
