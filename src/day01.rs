@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use thiserror::Error;
 
 const WANTED_SUM: usize = 2020;
 
@@ -21,13 +22,24 @@ const INPUT_FIRST_PART: [usize; 200] = [
     1444, 1499, 1680, 1752, 1597, 1963, 1117, 776,
 ];
 
-pub fn run() {
-    part_1();
-    part_2();
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("did not find solution for day01::part_1")]
+    Part1,
+
+    #[error("did not find solution for day01::part_2")]
+    Part2,
 }
 
-fn part_1() {
-    let (first, second) = find_two_entries(&INPUT_FIRST_PART).unwrap();
+pub fn run() -> Result<(), Error> {
+    part_1()?;
+    part_2()?;
+
+    Ok(())
+}
+
+fn part_1() -> Result<(), Error> {
+    let (first, second) = find_two_entries(&INPUT_FIRST_PART).ok_or(Error::Part1)?;
 
     println!(
         "day_01::part_1: {} + {} = {}",
@@ -35,10 +47,12 @@ fn part_1() {
         second,
         first * second
     );
+
+    Ok(())
 }
 
-fn part_2() {
-    let (first, second, third) = find_three_entries(&INPUT_FIRST_PART).unwrap();
+fn part_2() -> Result<(), Error> {
+    let (first, second, third) = find_three_entries(&INPUT_FIRST_PART).ok_or(Error::Part2)?;
 
     println!(
         "day_01::part_2: {} + {} + {} = {}",
@@ -47,6 +61,8 @@ fn part_2() {
         third,
         first * second * third
     );
+
+    Ok(())
 }
 
 fn find_two_entries(entries: &[usize]) -> Option<(&usize, &usize)> {

@@ -4,6 +4,10 @@ extern crate test;
 
 mod day01;
 
-fn main() {
-    day01::run();
+use anyhow::Error;
+
+fn main() -> Result<(), Error> {
+    day01::run()?;
+
+    Ok(())
 }
