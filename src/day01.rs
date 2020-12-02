@@ -2,6 +2,9 @@ use itertools::Itertools;
 
 const WANTED_SUM: usize = 2020;
 
+#[cfg(test)]
+const TEST_INPUT: [usize; 6] = [1721, 979, 366, 299, 675, 1456];
+
 const INPUT_FIRST_PART: [usize; 200] = [
     1753, 1976, 1574, 308, 1384, 1191, 1731, 1829, 1658, 1908, 1663, 2001, 1298, 1888, 1134, 1213,
     965, 2009, 1071, 1591, 1402, 1184, 1836, 1536, 1038, 1871, 1354, 1149, 1863, 1728, 1896, 1599,
@@ -56,19 +59,16 @@ fn find_two_entries(entries: &[usize]) -> Option<(&usize, &usize)> {
 fn find_three_entries(entries: &[usize]) -> Option<(&usize, &usize, &usize)> {
     entries
         .iter()
-        .combinations(3)
-        .map(|comb| (comb[0], comb[1], comb[2]))
+        .tuple_combinations()
         .find(|(first, second, third)| *first + *second + *third == WANTED_SUM)
 }
 
 #[cfg(test)]
 mod test {
-    const INPUT: [usize; 6] = [1721, 979, 366, 299, 675, 1456];
-
     #[test]
     fn find_two_entries() {
         let expected = Some((&1721, &299));
-        let got = super::find_two_entries(&INPUT);
+        let got = super::find_two_entries(&super::TEST_INPUT);
 
         assert_eq!(expected, got);
     }
@@ -76,7 +76,7 @@ mod test {
     #[test]
     fn find_three_entries() {
         let expected = Some((&979, &366, &675));
-        let got = super::find_three_entries(&INPUT);
+        let got = super::find_three_entries(&super::TEST_INPUT);
 
         assert_eq!(expected, got);
     }
@@ -95,5 +95,38 @@ mod test {
         let got = super::find_three_entries(&super::INPUT_FIRST_PART);
 
         assert_eq!(expected, got);
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    use test::Bencher;
+
+    #[bench]
+    fn find_two_entries(b: &mut Bencher) {
+        b.iter(|| {
+            super::find_two_entries(&super::TEST_INPUT);
+        });
+    }
+
+    #[bench]
+    fn find_three_entries(b: &mut Bencher) {
+        b.iter(|| {
+            super::find_three_entries(&super::TEST_INPUT);
+        });
+    }
+
+    #[bench]
+    fn part_1(b: &mut Bencher) {
+        b.iter(|| {
+            super::find_two_entries(&super::INPUT_FIRST_PART);
+        });
+    }
+
+    #[bench]
+    fn part_2(b: &mut Bencher) {
+        b.iter(|| {
+            super::find_three_entries(&super::INPUT_FIRST_PART);
+        });
     }
 }
