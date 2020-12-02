@@ -1,25 +1,11 @@
 pub(super) mod sled_rental {
+    use scan_fmt::scan_fmt;
     use thiserror::Error;
 
     #[derive(Debug, Error, Eq, PartialEq)]
     pub enum Error {
-        #[error("missing minmax in input")]
-        MissingMinMax,
-
-        #[error("missing character in input")]
-        MissingCharacter,
-
-        #[error("missing min in input")]
-        MissingMin,
-
-        #[error("invalid min in input: {0}")]
-        InvalidMin(std::num::ParseIntError),
-
-        #[error("missing max in input")]
-        MissingMax,
-
-        #[error("invalid max in input: {0}")]
-        InvalidMax(std::num::ParseIntError),
+        #[error("invalid input for policy: {0}")]
+        InvalidPolicy(String),
     }
 
     #[derive(Debug, Eq, PartialEq)]
@@ -49,31 +35,8 @@ pub(super) mod sled_rental {
         type Err = Error;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let mut minmax_character_split = s.split(' ');
-
-            let mut minmax = minmax_character_split
-                .next()
-                .ok_or(Error::MissingMinMax)?
-                .split('-');
-
-            let character = minmax_character_split
-                .next()
-                .ok_or(Error::MissingCharacter)?
-                .chars()
-                .next()
-                .ok_or(Error::MissingCharacter)?;
-
-            let min = minmax
-                .next()
-                .ok_or(Error::MissingMin)?
-                .parse()
-                .map_err(Error::InvalidMin)?;
-
-            let max = minmax
-                .next()
-                .ok_or(Error::MissingMax)?
-                .parse()
-                .map_err(Error::InvalidMax)?;
+            let (min, max, character) = scan_fmt!(s, "{}-{} {}", usize, usize, char)
+                .map_err(|e| Error::InvalidPolicy(format!("{}", e)))?;
 
             Ok(Self {
                 min,
@@ -91,13 +54,13 @@ pub(super) mod sled_rental {
         fn from_str() {
             const INPUT: &str = "1-3 a";
 
-            let expected = Ok(super::PasswordPolicy {
+            let expected = super::PasswordPolicy {
                 min: 1,
                 max: 3,
                 character: 'a',
-            });
+            };
 
-            let got = super::PasswordPolicy::from_str(INPUT);
+            let got = super::PasswordPolicy::from_str(INPUT).unwrap();
 
             assert_eq!(expected, got);
         }
@@ -105,27 +68,13 @@ pub(super) mod sled_rental {
 }
 
 pub(super) mod toboggan_rental {
+    use scan_fmt::scan_fmt;
     use thiserror::Error;
 
     #[derive(Debug, Error, Eq, PartialEq)]
     pub enum Error {
-        #[error("missing index in input")]
-        MissingIndex,
-
-        #[error("missing character in input")]
-        MissingCharacter,
-
-        #[error("missing contains index in input")]
-        MissingContainsIndex,
-
-        #[error("invalid contains index in input: {0}")]
-        InvalidContainsIndex(std::num::ParseIntError),
-
-        #[error("missing not contains index in input")]
-        MissingNotContainsIndex,
-
-        #[error("invalid not contains index in input: {0}")]
-        InvalidNotContainsIndex(std::num::ParseIntError),
+        #[error("invalid input for policy: {0}")]
+        InvalidPolicy(String),
     }
 
     #[derive(Debug, Eq, PartialEq)]
@@ -161,32 +110,13 @@ pub(super) mod toboggan_rental {
         type Err = Error;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let mut index_character_split = s.split(' ');
-            let mut index = index_character_split
-                .next()
-                .ok_or(Error::MissingIndex)?
-                .split('-');
+            let (contains_index, not_contains_index, character) =
+                scan_fmt!(s, "{}-{} {}", usize, usize, char)
+                    .map_err(|e| Error::InvalidPolicy(format!("{}", e)))?;
 
-            let character = index_character_split
-                .next()
-                .ok_or(Error::MissingCharacter)?
-                .chars()
-                .next()
-                .ok_or(Error::MissingCharacter)?;
-
-            let contains_index = index
-                .next()
-                .ok_or(Error::MissingContainsIndex)?
-                .parse::<usize>()
-                .map_err(Error::InvalidContainsIndex)?
-                - 1;
-
-            let not_contains_index = index
-                .next()
-                .ok_or(Error::MissingNotContainsIndex)?
-                .parse::<usize>()
-                .map_err(Error::InvalidNotContainsIndex)?
-                - 1;
+            // Make values one smaller so we have a zero indexed value for the index
+            let contains_index = contains_index - 1;
+            let not_contains_index = not_contains_index - 1;
 
             Ok(Self {
                 contains_index,
