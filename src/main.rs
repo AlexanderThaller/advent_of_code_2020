@@ -7,11 +7,13 @@
 extern crate test;
 
 mod day01;
+mod day02;
 
 use anyhow::Error;
 
 fn main() -> Result<(), Error> {
     day01::run()?;
+    day02::run()?;
 
     Ok(())
 }
