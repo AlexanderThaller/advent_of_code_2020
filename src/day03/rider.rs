@@ -78,8 +78,9 @@ mod test {
                 ((1, 2), 2),
             ];
 
+            let mut rider = super::new(input);
+
             for ((right, down), expected) in slopes {
-                let mut rider = super::new(input.clone());
                 rider.ride(right, down);
 
                 let got = rider.trees_seen;
@@ -90,7 +91,48 @@ mod test {
                 }
 
                 assert_eq!(expected, got);
+
+                rider.reset()
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    use super::{
+        new,
+        Map,
+    };
+
+    mod ride {
+        use test::Bencher;
+
+        #[bench]
+        fn input_test_part1(b: &mut Bencher) {
+            let input = include_str!("input_test.txt").parse().expect("invalid map");
+
+            let mut rider = super::new(input);
+
+            b.iter(|| {
+                rider.ride(3, 1);
+                rider.reset();
+            });
+        }
+
+        #[bench]
+        fn input_test_part2(b: &mut Bencher) {
+            let input: super::Map = include_str!("input_test.txt").parse().expect("invalid map");
+            let slopes = vec![(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+
+            let mut rider = super::new(input);
+
+            b.iter(|| {
+                for (right, down) in &slopes {
+                    rider.ride(*right, *down);
+                    rider.reset();
+                }
+            });
         }
     }
 }
@@ -245,6 +287,86 @@ pub mod map {
                 got.sort();
 
                 assert_eq!(expected, got);
+            }
+        }
+
+        mod get_tile {
+            use super::Tile;
+
+            #[test]
+            fn single_column_no_trackback() {
+                let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
+                let expected = Some(&Tile::Air);
+                let got = map.get_tile(&(0, 0).into());
+
+                assert_eq!(expected, got);
+            }
+
+            #[test]
+            fn single_column_trackback() {
+                let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
+                let expected = Some(&Tile::Air);
+                let got = map.get_tile(&(1, 0).into());
+
+                assert_eq!(expected, got);
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod bench {
+        use super::{
+            Map,
+            Tile,
+        };
+
+        mod from_str {
+            use std::str::FromStr;
+            use test::Bencher;
+
+            #[bench]
+            fn minimal(b: &mut Bencher) {
+                const INPUT: &str = ".";
+
+                b.iter(|| {
+                    let _ = super::Map::from_str(INPUT);
+                })
+            }
+
+            #[bench]
+            fn multiline(b: &mut Bencher) {
+                const INPUT: &str = ".\n#";
+
+                b.iter(|| {
+                    let _ = super::Map::from_str(INPUT);
+                })
+            }
+
+            #[bench]
+            fn multi_dimension(b: &mut Bencher) {
+                const INPUT: &str = ".#\n#.";
+
+                b.iter(|| {
+                    let _ = super::Map::from_str(INPUT);
+                })
+            }
+
+            #[bench]
+            fn test_input(b: &mut Bencher) {
+                const INPUT: &str = include_str!("input_test.txt");
+
+                b.iter(|| {
+                    let _ = super::Map::from_str(INPUT);
+                })
+            }
+
+            #[bench]
+            fn input(b: &mut Bencher) {
+                const INPUT: &str = include_str!("input.txt");
+
+                b.iter(|| {
+                    let _ = super::Map::from_str(INPUT);
+                })
             }
         }
 

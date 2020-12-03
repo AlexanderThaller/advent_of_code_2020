@@ -9,8 +9,8 @@ pub enum Error {
 }
 
 pub fn run() -> Result<(), Error> {
-    part_1()?;
-    part_2()?;
+    println!("day_03::part_1: trees_seen = {}", part_1()?);
+    println!("day_03::part_2: total trees_seen = {}", part_2()?);
 
     Ok(())
 }
@@ -21,8 +21,6 @@ pub fn part_1() -> Result<usize, Error> {
 
     let mut rider = rider::new(input);
     rider.ride(right, down);
-
-    println!("day_03::part_1: trees_seen = {}", rider.trees_seen);
 
     Ok(rider.trees_seen)
 }
@@ -43,8 +41,6 @@ pub fn part_2() -> Result<usize, Error> {
             trees_seen
         })
         .product::<usize>();
-
-    println!("day_03::part_2: total trees_seen = {}", trees_seen);
 
     Ok(trees_seen)
 }
