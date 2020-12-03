@@ -13,12 +13,24 @@ mod day01;
 mod day02;
 mod day03;
 
-use anyhow::Error;
+use anyhow::{
+    anyhow,
+    Error,
+};
 
 fn main() -> Result<(), Error> {
-    day01::run()?;
-    day02::run()?;
-    day03::run()?;
+    if let Some(day) = std::env::args().nth(1) {
+        match day.as_str() {
+            "day01" => day01::run()?,
+            "day02" => day02::run()?,
+            "day03" => day03::run()?,
+            _ => Err(anyhow!("unkown day {}", day))?,
+        }
+    } else {
+        day01::run()?;
+        day02::run()?;
+        day03::run()?;
+    }
 
     Ok(())
 }
