@@ -37,9 +37,11 @@ pub enum Error {
     #[error("missing policy in input")]
     MissingPolicy,
 
+    #[cfg(test)]
     #[error("invalid sled policy: {0}")]
     InvalidSledPolicy(password_policy::sled_rental::Error),
 
+    #[cfg(test)]
     #[error("invalid sled policy: {0}")]
     InvalidTobogganPolicy(password_policy::toboggan_rental::Error),
 
@@ -86,6 +88,7 @@ fn part_2() -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(test)]
 pub fn is_valid_password_sled_rental(entry: &str) -> Result<bool, Error> {
     let mut policy_password_split = entry.split(':');
 
@@ -105,6 +108,7 @@ pub fn is_valid_password_sled_rental(entry: &str) -> Result<bool, Error> {
     Ok(valid)
 }
 
+#[cfg(test)]
 pub fn is_valid_password_toboggan_rental(entry: &str) -> Result<bool, Error> {
     let mut policy_password_split = entry.split(':');
 
