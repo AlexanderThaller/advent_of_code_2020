@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     convert::TryInto,
 };
 use thiserror::Error;
@@ -17,7 +17,7 @@ pub enum Error {
 
 #[derive(Debug, Default, Clone)]
 pub struct Map {
-    entries: HashMap<Coordinate, Tile>,
+    entries: BTreeMap<Coordinate, Tile>,
     max_coordinate: Coordinate,
 }
 
@@ -25,7 +25,7 @@ impl std::str::FromStr for Map {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut entries = HashMap::default();
+        let mut entries = BTreeMap::default();
         let mut max_coordinate = Coordinate::default();
 
         for (y, line) in s.lines().enumerate() {
@@ -50,7 +50,7 @@ impl std::str::FromStr for Map {
 
 impl std::iter::IntoIterator for Map {
     type Item = (Coordinate, Tile);
-    type IntoIter = std::collections::hash_map::IntoIter<Coordinate, Tile>;
+    type IntoIter = std::collections::btree_map::IntoIter<Coordinate, Tile>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.entries.into_iter()
@@ -59,7 +59,7 @@ impl std::iter::IntoIterator for Map {
 
 impl From<Vec<(Coordinate, Tile)>> for Map {
     fn from(vec: Vec<(Coordinate, Tile)>) -> Self {
-        let entries = vec.into_iter().collect::<HashMap<_, _>>();
+        let entries = vec.into_iter().collect::<BTreeMap<_, _>>();
 
         let max_coordinate = entries
             .keys()
