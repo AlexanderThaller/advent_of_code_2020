@@ -154,22 +154,27 @@ pub mod map {
 
     impl Map {
         pub fn get_tile(&self, coordinate: &Coordinate) -> Option<&Tile> {
-            let map_width = self.max_x() + 1;
             let max_y = self.max_y();
-
-            let mut check_coordinate = *coordinate;
-
-            loop {
-                if let Some(tile) = self.entries.get(&check_coordinate) {
-                    return Some(tile);
-                } else {
-                    if check_coordinate.y > max_y {
-                        return None;
-                    }
-
-                    check_coordinate = check_coordinate.step_left(map_width)
-                }
+            if coordinate.y > max_y {
+                return None;
             }
+
+            let max_x = self.max_x();
+            dbg!(&coordinate);
+            dbg!(max_x);
+
+            let check_coordinate = if coordinate.x > max_x {
+                Coordinate {
+                    x: coordinate.x % (max_x + 1),
+                    y: coordinate.y,
+                }
+            } else {
+                *coordinate
+            };
+
+            dbg!(&check_coordinate);
+
+            self.entries.get(&check_coordinate)
         }
 
         pub fn max_y(&self) -> usize {
@@ -287,13 +292,6 @@ mod coordinate {
         pub fn step_right(self, steps: usize) -> Self {
             Self {
                 x: self.x + steps,
-                y: self.y,
-            }
-        }
-
-        pub fn step_left(self, steps: usize) -> Self {
-            Self {
-                x: self.x - steps,
                 y: self.y,
             }
         }
