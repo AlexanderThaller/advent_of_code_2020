@@ -18,6 +18,7 @@ pub enum Error {
 #[derive(Debug, Default, Clone)]
 pub struct Map {
     entries: HashMap<Coordinate, Tile>,
+    max_coordinate: Coordinate,
 }
 
 impl std::str::FromStr for Map {
@@ -25,15 +26,25 @@ impl std::str::FromStr for Map {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut entries = HashMap::default();
+        let mut max_coordinate = Coordinate::default();
 
         for (y, line) in s.lines().enumerate() {
             for (x, ch) in line.chars().enumerate() {
                 let tile = ch.try_into().map_err(Error::InvalidTile)?;
-                entries.insert((x, y).into(), tile);
+
+                let coordinate = (x, y).into();
+                if coordinate > max_coordinate {
+                    max_coordinate = coordinate
+                }
+
+                entries.insert(coordinate, tile);
             }
         }
 
-        Ok(Self { entries })
+        Ok(Self {
+            entries,
+            max_coordinate,
+        })
     }
 }
 
@@ -48,9 +59,18 @@ impl std::iter::IntoIterator for Map {
 
 impl From<Vec<(Coordinate, Tile)>> for Map {
     fn from(vec: Vec<(Coordinate, Tile)>) -> Self {
-        let entries = vec.into_iter().collect();
+        let entries = vec.into_iter().collect::<HashMap<_, _>>();
 
-        Self { entries }
+        let max_coordinate = entries
+            .keys()
+            .max()
+            .unwrap_or(&Coordinate { x: 0, y: 0 })
+            .to_owned();
+
+        Self {
+            entries,
+            max_coordinate,
+        }
     }
 }
 
@@ -64,10 +84,7 @@ impl Map {
         let max_x = self.max_x();
 
         let check_coordinate = if coordinate.x > max_x {
-            Coordinate {
-                x: coordinate.x % (max_x + 1),
-                y: coordinate.y,
-            }
+            (coordinate.x % (max_x + 1), coordinate.y).into()
         } else {
             *coordinate
         };
@@ -76,11 +93,11 @@ impl Map {
     }
 
     pub fn max_y(&self) -> usize {
-        self.entries.keys().map(|c| c.y).max().unwrap_or_default()
+        self.max_coordinate.y
     }
 
     pub fn max_x(&self) -> usize {
-        self.entries.keys().map(|c| c.x).max().unwrap_or_default()
+        self.max_coordinate.x
     }
 }
 
@@ -228,23 +245,35 @@ mod bench {
 
     mod get_tile {
         use super::Tile;
+        use std::str::FromStr;
+        use test::Bencher;
 
-        #[test]
-        fn single_column_no_trackback() {
+        #[bench]
+        fn single_column_no_trackback(b: &mut Bencher) {
             let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
-            let expected = Some(&Tile::Air);
-            let got = map.get_tile(&(0, 0).into());
 
-            assert_eq!(expected, got);
+            b.iter(|| {
+                let _ = map.get_tile(&(0, 0).into());
+            })
         }
 
-        #[test]
-        fn single_column_trackback() {
+        #[bench]
+        fn single_column_trackback(b: &mut Bencher) {
             let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
-            let expected = Some(&Tile::Air);
-            let got = map.get_tile(&(1, 0).into());
 
-            assert_eq!(expected, got);
+            b.iter(|| {
+                let _ = map.get_tile(&(1, 0).into());
+            })
+        }
+
+        #[bench]
+        fn input(b: &mut Bencher) {
+            const INPUT: &str = include_str!("../input.txt");
+            let map = super::Map::from_str(INPUT).expect("invalid input");
+
+            b.iter(|| {
+                let _ = map.get_tile(&(0, 0).into());
+            })
         }
     }
 }
