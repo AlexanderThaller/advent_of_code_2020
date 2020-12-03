@@ -6,6 +6,9 @@
 #[cfg(test)]
 extern crate test;
 
+#[allow(dead_code)]
+mod template;
+
 mod day01;
 mod day02;
 

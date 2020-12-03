@@ -60,7 +60,7 @@ pub(super) mod sled_rental {
                 character: 'a',
             };
 
-            let got = super::PasswordPolicy::from_str(INPUT).unwrap();
+            let got = super::PasswordPolicy::from_str(INPUT).expect("bad input");
 
             assert_eq!(expected, got);
         }

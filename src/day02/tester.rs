@@ -23,7 +23,7 @@ impl<'a> SledTester<'a> {
         let policy = self
             .policies
             .entry(policy_raw)
-            .or_insert_with(|| policy_raw.parse().unwrap());
+            .or_insert_with(|| policy_raw.parse().expect("bad input"));
 
         let password = policy_password_split
             .next()
@@ -54,7 +54,7 @@ impl<'a> TobogganTester<'a> {
         let policy = self
             .policies
             .entry(policy_raw)
-            .or_insert_with(|| policy_raw.parse().unwrap());
+            .or_insert_with(|| policy_raw.parse().expect("bad input"));
 
         let password = policy_password_split
             .next()
