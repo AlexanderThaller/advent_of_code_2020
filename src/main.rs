@@ -24,7 +24,7 @@ fn main() -> Result<(), Error> {
             "day01" => day01::run()?,
             "day02" => day02::run()?,
             "day03" => day03::run()?,
-            _ => Err(anyhow!("unkown day {}", day))?,
+            _ => return Err(anyhow!("unkown day {}", day)),
         }
     } else {
         day01::run()?;
