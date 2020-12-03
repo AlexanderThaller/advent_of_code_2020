@@ -142,6 +142,7 @@ mod test {
 #[cfg(test)]
 mod bench {
     use super::{
+        Coordinate,
         Map,
         Tile,
     };
@@ -204,18 +205,20 @@ mod bench {
         #[bench]
         fn single_column_no_trackback(b: &mut Bencher) {
             let map: super::Map = vec![vec![Tile::Air]].into();
+            let coordinate: super::Coordinate = test::black_box((0, 0).into());
 
             b.iter(|| {
-                let _ = map.get_tile(&(0, 0).into());
+                let _ = map.get_tile(&coordinate);
             })
         }
 
         #[bench]
         fn single_column_trackback(b: &mut Bencher) {
             let map: super::Map = vec![vec![Tile::Air]].into();
+            let coordinate: super::Coordinate = test::black_box((1, 0).into());
 
             b.iter(|| {
-                let _ = map.get_tile(&(1, 0).into());
+                let _ = map.get_tile(&coordinate);
             })
         }
 
@@ -223,9 +226,10 @@ mod bench {
         fn input(b: &mut Bencher) {
             const INPUT: &str = include_str!("../input.txt");
             let map = super::Map::from_str(INPUT).expect("invalid input");
+            let coordinate: super::Coordinate = test::black_box((0, 0).into());
 
             b.iter(|| {
-                let _ = map.get_tile(&(0, 0).into());
+                let _ = map.get_tile(&coordinate);
             })
         }
     }
