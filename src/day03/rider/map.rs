@@ -1,7 +1,4 @@
-use std::{
-    collections::BTreeMap,
-    convert::TryInto,
-};
+use std::convert::TryInto;
 use thiserror::Error;
 
 use super::{
@@ -15,9 +12,9 @@ pub enum Error {
     InvalidTile(super::tile::Error),
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Map {
-    entries: BTreeMap<Coordinate, Tile>,
+    entries: Vec<Vec<Tile>>,
     max_coordinate: Coordinate,
 }
 
@@ -25,47 +22,24 @@ impl std::str::FromStr for Map {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut entries = BTreeMap::default();
-        let mut max_coordinate = Coordinate::default();
+        let entries = s
+            .lines()
+            .map(|line| {
+                line.chars()
+                    .map(|ch| ch.try_into().map_err(Error::InvalidTile))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
-        for (y, line) in s.lines().enumerate() {
-            for (x, ch) in line.chars().enumerate() {
-                let tile = ch.try_into().map_err(Error::InvalidTile)?;
-
-                let coordinate = (x, y).into();
-                if coordinate > max_coordinate {
-                    max_coordinate = coordinate
-                }
-
-                entries.insert(coordinate, tile);
-            }
-        }
-
-        Ok(Self {
-            entries,
-            max_coordinate,
-        })
+        Ok(entries.into())
     }
 }
 
-impl std::iter::IntoIterator for Map {
-    type Item = (Coordinate, Tile);
-    type IntoIter = std::collections::btree_map::IntoIter<Coordinate, Tile>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.entries.into_iter()
-    }
-}
-
-impl From<Vec<(Coordinate, Tile)>> for Map {
-    fn from(vec: Vec<(Coordinate, Tile)>) -> Self {
-        let entries = vec.into_iter().collect::<BTreeMap<_, _>>();
-
-        let max_coordinate = entries
-            .keys()
-            .max()
-            .unwrap_or(&Coordinate { x: 0, y: 0 })
-            .to_owned();
+impl From<Vec<Vec<Tile>>> for Map {
+    fn from(entries: Vec<Vec<Tile>>) -> Self {
+        let max_y = entries.len() - 1;
+        let max_x = entries.get(0).map_or(0, |line| line.len() - 1);
+        let max_coordinate = Coordinate { x: max_x, y: max_y };
 
         Self {
             entries,
@@ -89,7 +63,7 @@ impl Map {
             *coordinate
         };
 
-        self.entries.get(&check_coordinate)
+        Some(&self.entries[check_coordinate.y][check_coordinate.x])
     }
 
     pub fn max_y(&self) -> usize {
@@ -115,14 +89,8 @@ mod test {
         #[test]
         fn minimal() {
             const INPUT: &str = ".";
-            let mut expected = vec![((0, 0).into(), Tile::Air)];
-            expected.sort();
-
-            let mut got = super::Map::from_str(INPUT)
-                .expect("invalid input")
-                .into_iter()
-                .collect::<Vec<_>>();
-            got.sort();
+            let expected: super::Map = vec![vec![Tile::Air]].into();
+            let got = super::Map::from_str(INPUT).expect("invalid input");
 
             assert_eq!(expected, got);
         }
@@ -130,14 +98,8 @@ mod test {
         #[test]
         fn multiline() {
             const INPUT: &str = ".\n#";
-            let mut expected = vec![((0, 0).into(), Tile::Air), ((0, 1).into(), Tile::Tree)];
-            expected.sort();
-
-            let mut got = super::Map::from_str(INPUT)
-                .expect("invalid input")
-                .into_iter()
-                .collect::<Vec<_>>();
-            got.sort();
+            let expected: super::Map = vec![vec![Tile::Air], vec![Tile::Tree]].into();
+            let got = super::Map::from_str(INPUT).expect("invalid input");
 
             assert_eq!(expected, got);
         }
@@ -145,19 +107,10 @@ mod test {
         #[test]
         fn multi_dimension() {
             const INPUT: &str = ".#\n#.";
-            let mut expected = vec![
-                ((0, 0).into(), Tile::Air),
-                ((1, 0).into(), Tile::Tree),
-                ((0, 1).into(), Tile::Tree),
-                ((1, 1).into(), Tile::Air),
-            ];
-            expected.sort();
 
-            let mut got = super::Map::from_str(INPUT)
-                .expect("invalid input")
-                .into_iter()
-                .collect::<Vec<_>>();
-            got.sort();
+            let expected: super::Map =
+                vec![vec![Tile::Air, Tile::Tree], vec![Tile::Tree, Tile::Air]].into();
+            let got = super::Map::from_str(INPUT).expect("invalid input");
 
             assert_eq!(expected, got);
         }
@@ -168,7 +121,7 @@ mod test {
 
         #[test]
         fn single_column_no_trackback() {
-            let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
+            let map: super::Map = vec![vec![Tile::Air]].into();
             let expected = Some(&Tile::Air);
             let got = map.get_tile(&(0, 0).into());
 
@@ -177,7 +130,7 @@ mod test {
 
         #[test]
         fn single_column_trackback() {
-            let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
+            let map: super::Map = vec![vec![Tile::Air]].into();
             let expected = Some(&Tile::Air);
             let got = map.get_tile(&(1, 0).into());
 
@@ -250,7 +203,7 @@ mod bench {
 
         #[bench]
         fn single_column_no_trackback(b: &mut Bencher) {
-            let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
+            let map: super::Map = vec![vec![Tile::Air]].into();
 
             b.iter(|| {
                 let _ = map.get_tile(&(0, 0).into());
@@ -259,7 +212,7 @@ mod bench {
 
         #[bench]
         fn single_column_trackback(b: &mut Bencher) {
-            let map: super::Map = vec![((0, 0).into(), Tile::Air)].into();
+            let map: super::Map = vec![vec![Tile::Air]].into();
 
             b.iter(|| {
                 let _ = map.get_tile(&(1, 0).into());
