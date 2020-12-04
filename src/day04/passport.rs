@@ -98,8 +98,6 @@ mod passport {
                 .map(|entry| entry.splitn(2, ':').collect_tuple().unwrap())
                 .collect::<Vec<_>>();
 
-            dbg!(&values);
-
             let mut builder = Builder::default();
             for (key, value) in values {
                 match key {
@@ -115,8 +113,6 @@ mod passport {
                     _ => panic!("unkown key {}", key),
                 }
             }
-
-            dbg!(&builder);
 
             Ok(Passport {
                 byr: builder.byr.ok_or(Error::MissingField("byr"))?.to_string(),
