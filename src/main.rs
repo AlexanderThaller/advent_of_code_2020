@@ -13,6 +13,7 @@ mod day01;
 mod day02;
 mod day03;
 mod day04;
+mod day05;
 
 use anyhow::{
     anyhow,
@@ -26,6 +27,7 @@ fn main() -> Result<(), Error> {
             "day02" => day02::run()?,
             "day03" => day03::run()?,
             "day04" => day04::run()?,
+            "day05" => day05::run()?,
             _ => return Err(anyhow!("unkown day {}", day)),
         }
     } else {
@@ -33,6 +35,7 @@ fn main() -> Result<(), Error> {
         day02::run()?;
         day03::run()?;
         day04::run()?;
+        day05::run()?;
     }
 
     Ok(())

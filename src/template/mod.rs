@@ -1,10 +1,8 @@
 use thiserror::Error;
 
+#[allow(clippy::empty_enum)]
 #[derive(Debug, Error)]
-pub enum Error {
-    #[error("example error")]
-    Example,
-}
+pub enum Error {}
 
 pub fn run() -> Result<(), Error> {
     part_1()?;
