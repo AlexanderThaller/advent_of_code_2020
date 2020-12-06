@@ -1,11 +1,12 @@
 use thiserror::Error;
 
-mod passport;
-mod passport_strict;
+mod passports;
+mod passports_strict;
 
-use passport::Passports;
-use passport_strict::Passports as PassportsStrict;
+use passports::Passports;
+use passports_strict::Passports as PassportsStrict;
 
+#[allow(clippy::empty_enum)]
 #[derive(Debug, Error)]
 pub enum Error {}
 

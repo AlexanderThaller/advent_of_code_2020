@@ -2,6 +2,7 @@ use thiserror::Error;
 
 use passport::Passport;
 
+#[allow(clippy::empty_enum)]
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum Error {}
 

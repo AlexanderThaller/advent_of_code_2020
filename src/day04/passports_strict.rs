@@ -2,6 +2,7 @@ use thiserror::Error;
 
 use passport::Passport;
 
+#[allow(clippy::empty_enum)]
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum Error {}
 
@@ -407,23 +408,23 @@ mod passport {
             type Err = Error;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                if !s.starts_with('#') {
-                    return Err(Error::NotStartWithHash);
-                }
-
                 const VALID_CHARS: [char; 17] = [
                     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e',
                     'f',
                 ];
 
+                if !s.starts_with('#') {
+                    return Err(Error::NotStartWithHash);
+                }
+
                 let value = s
                     .chars()
                     .skip(1)
                     .map(|c| {
-                        if !VALID_CHARS.contains(&c) {
-                            Err(Error::InvalidCharacter)
-                        } else {
+                        if VALID_CHARS.contains(&c) {
                             Ok(c)
+                        } else {
+                            Err(Error::InvalidCharacter)
                         }
                     })
                     .collect::<Result<String, _>>()?;
