@@ -12,40 +12,29 @@ pub struct Seat {
     pub column: usize,
 }
 
-impl std::str::FromStr for Seat {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let row = get_row(s)?;
-        let column = get_column(s)?;
+impl From<&str> for Seat {
+    fn from(s: &str) -> Self {
+        let row = get_row(s);
+        let column = get_column(s);
         let id = (row * 8) + column;
 
-        Ok(Self { row, column, id })
+        Self { row, column, id }
     }
 }
 
-fn get_row(s: &str) -> Result<usize, Error> {
-    let row = parse_partition(s, 'F', 'B', 127)?;
-
-    Ok(row)
+fn get_row(s: &str) -> usize {
+    parse_partition(s, 'F', 'B', 127)
 }
 
-fn get_column(s: &str) -> Result<usize, Error> {
-    let column = parse_partition(s, 'L', 'R', 7)?;
-
-    Ok(column)
+fn get_column(s: &str) -> usize {
+    parse_partition(s, 'L', 'R', 7)
 }
 
-fn parse_partition(
-    s: &str,
-    choose_upper: char,
-    choose_lower: char,
-    max_value: usize,
-) -> Result<usize, Error> {
+fn parse_partition(s: &str, choose_upper: char, choose_lower: char, max_value: usize) -> usize {
     let mut values = (0..=max_value).collect::<Vec<_>>();
 
     for ch in s.chars() {
-        if !(ch == choose_upper) && !(ch == choose_lower) {
+        if ch != choose_upper && ch != choose_lower {
             continue;
         }
 
@@ -59,12 +48,10 @@ fn parse_partition(
         }
     }
 
-    let value = values
+    values
         .into_iter()
         .min()
-        .expect("values should always contain at least one entry at this point");
-
-    Ok(value)
+        .expect("values should always contain at least one entry at this point")
 }
 
 #[cfg(test)]
@@ -85,7 +72,7 @@ mod test {
         #[test]
         fn part_1_example_1() {
             let expected = 70;
-            let got = get_row(INPUT_PART1_EXAMPLE_1).unwrap();
+            let got = get_row(INPUT_PART1_EXAMPLE_1);
 
             assert_eq!(expected, got);
         }
@@ -93,7 +80,7 @@ mod test {
         #[test]
         fn part_1_example_2() {
             let expected = 14;
-            let got = get_row(INPUT_PART1_EXAMPLE_2).unwrap();
+            let got = get_row(INPUT_PART1_EXAMPLE_2);
 
             assert_eq!(expected, got);
         }
@@ -101,7 +88,7 @@ mod test {
         #[test]
         fn part_1_example_3() {
             let expected = 102;
-            let got = get_row(INPUT_PART1_EXAMPLE_3).unwrap();
+            let got = get_row(INPUT_PART1_EXAMPLE_3);
 
             assert_eq!(expected, got);
         }
@@ -113,7 +100,7 @@ mod test {
         #[test]
         fn part_1_example_1() {
             let expected = 7;
-            let got = get_column(INPUT_PART1_EXAMPLE_1).unwrap();
+            let got = get_column(INPUT_PART1_EXAMPLE_1);
 
             assert_eq!(expected, got);
         }
@@ -121,7 +108,7 @@ mod test {
         #[test]
         fn part_1_example_2() {
             let expected = 7;
-            let got = get_column(INPUT_PART1_EXAMPLE_2).unwrap();
+            let got = get_column(INPUT_PART1_EXAMPLE_2);
 
             assert_eq!(expected, got);
         }
@@ -129,7 +116,7 @@ mod test {
         #[test]
         fn part_1_example_3() {
             let expected = 4;
-            let got = get_column(INPUT_PART1_EXAMPLE_3).unwrap();
+            let got = get_column(INPUT_PART1_EXAMPLE_3);
 
             assert_eq!(expected, got);
         }
@@ -146,7 +133,7 @@ mod test {
                 id: 567,
             };
 
-            let got = INPUT_PART1_EXAMPLE_1.parse().expect("invalid input");
+            let got = Seat::from(INPUT_PART1_EXAMPLE_1);
 
             assert_eq!(expected, got);
         }
@@ -159,7 +146,7 @@ mod test {
                 id: 119,
             };
 
-            let got = INPUT_PART1_EXAMPLE_2.parse().expect("invalid input");
+            let got = Seat::from(INPUT_PART1_EXAMPLE_2);
 
             assert_eq!(expected, got);
         }
@@ -172,7 +159,7 @@ mod test {
                 id: 820,
             };
 
-            let got = INPUT_PART1_EXAMPLE_3.parse().expect("invalid input");
+            let got = Seat::from(INPUT_PART1_EXAMPLE_3);
 
             assert_eq!(expected, got);
         }

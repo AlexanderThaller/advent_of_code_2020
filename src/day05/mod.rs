@@ -18,10 +18,9 @@ pub fn run() -> Result<(), Error> {
 pub fn part_1() -> Result<usize, Error> {
     let max_id = include_str!("input.txt")
         .lines()
-        .map(|line| line.parse::<Seat>().unwrap())
+        .map(|line| Seat::from(line).id)
         .max()
-        .unwrap()
-        .id;
+        .unwrap();
 
     Ok(max_id)
 }
@@ -30,10 +29,10 @@ pub fn part_1() -> Result<usize, Error> {
 pub fn part_2() -> Result<usize, Error> {
     let mut seats = include_str!("input.txt")
         .lines()
-        .map(|line| line.parse::<Seat>().unwrap().id)
+        .map(|line| Seat::from(line).id)
         .collect::<Vec<_>>();
 
-    seats.sort();
+    seats.sort_unstable();
 
     let seat_hole = seats
         .iter()
@@ -62,5 +61,24 @@ mod test {
         let got = super::part_2().unwrap();
 
         assert_eq!(expected, got)
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    use test::Bencher;
+
+    #[bench]
+    fn part_1(b: &mut Bencher) {
+        b.iter(|| {
+            let _ = super::part_1();
+        });
+    }
+
+    #[bench]
+    fn part_2(b: &mut Bencher) {
+        b.iter(|| {
+            let _ = super::part_2();
+        });
     }
 }
