@@ -25,3 +25,7 @@ need_stdout = true
 [jobs.test_day05]
 command = ["cargo", "test", "--color", "always", "day05"]
 need_stdout = true
+
+[jobs.test_day06]
+command = ["cargo", "test", "--color", "always", "day06"]
+need_stdout = true

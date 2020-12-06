@@ -1,3 +1,4 @@
+#![feature(iterator_fold_self)]
 #![warn(clippy::pedantic)]
 //#![warn(clippy::unwrap_used)]
 #![warn(rust_2018_idioms, unused_lifetimes, missing_debug_implementations)]
@@ -14,6 +15,7 @@ mod day02;
 mod day03;
 mod day04;
 mod day05;
+mod day06;
 
 use anyhow::{
     anyhow,
@@ -28,6 +30,7 @@ fn main() -> Result<(), Error> {
             "day03" => day03::run()?,
             "day04" => day04::run()?,
             "day05" => day05::run()?,
+            "day06" => day06::run()?,
             _ => return Err(anyhow!("unkown day {}", day)),
         }
     } else {
@@ -36,6 +39,7 @@ fn main() -> Result<(), Error> {
         day03::run()?;
         day04::run()?;
         day05::run()?;
+        day06::run()?;
     }
 
     Ok(())
