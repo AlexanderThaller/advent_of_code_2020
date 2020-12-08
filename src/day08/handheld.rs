@@ -2,7 +2,6 @@ use thiserror::Error;
 
 use instruction::Instruction;
 
-#[allow(clippy::empty_enum)]
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("can not parse instruction from line: {0}")]
@@ -13,9 +12,12 @@ pub enum Error {
 
     #[error("found already executed instruction")]
     DuplicateInstructionFound,
+
+    #[error("found loop")]
+    LoopFound(Handheld),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Handheld {
     pub accumulator: isize,
 
@@ -46,6 +48,19 @@ impl std::str::FromStr for Handheld {
     }
 }
 
+impl From<Vec<Instruction>> for Handheld {
+    fn from(instructions: Vec<Instruction>) -> Self {
+        Self {
+            accumulator: 0,
+
+            instruction_pointer: 0,
+            instructions,
+
+            executed_instructions: Vec::new(),
+        }
+    }
+}
+
 impl Handheld {
     pub fn run(self) -> Result<Self, Error> {
         let mut local = self;
@@ -53,10 +68,13 @@ impl Handheld {
         loop {
             if let Err(err) = local.step() {
                 match err {
-                    Error::DuplicateInstructionFound => break,
-
+                    Error::DuplicateInstructionFound => return Err(Error::LoopFound(local)),
                     err => return Err(err),
                 }
+            }
+
+            if local.instruction_pointer == local.instructions.len() {
+                break;
             }
         }
 
@@ -107,7 +125,11 @@ mod test {
             let expected = 5;
 
             let handlheld = INPUT.parse::<super::Handheld>().expect("invalid input");
-            let got = handlheld.run().expect("run failure").accumulator;
+            let got = match handlheld.run() {
+                Ok(h) => h.accumulator,
+                Err(super::Error::LoopFound(h)) => h.accumulator,
+                Err(err) => panic!(err),
+            };
 
             assert_eq!(expected, got);
         }
@@ -157,10 +179,129 @@ mod test {
     }
 }
 
+pub mod fixer {
+    use super::{
+        Handheld,
+        Instruction,
+    };
+    use thiserror::Error;
+
+    #[derive(Debug, Error)]
+    pub enum Error {
+        #[error("problem while running handheld: {0}")]
+        HandheldRun(super::Error),
+    }
+
+    pub struct Fixer {
+        to_check: Vec<(usize, Instruction)>,
+        instructions: Vec<Instruction>,
+    }
+
+    impl From<Handheld> for Fixer {
+        fn from(handheld: Handheld) -> Self {
+            let to_check = handheld
+                .instructions
+                .iter()
+                .cloned()
+                .enumerate()
+                .filter(|(_, instruction)| instruction.is_jmp())
+                .collect();
+
+            let instructions = handheld.instructions;
+
+            Self {
+                to_check,
+                instructions,
+            }
+        }
+    }
+
+    impl Fixer {
+        pub fn step(&self, replace_index: usize) -> Result<Handheld, Error> {
+            let mut check_instructions = self.instructions.clone();
+            let new_instruction = Instruction::Nop;
+
+            let _ = std::mem::replace(&mut check_instructions[replace_index], new_instruction);
+
+            let handheld = Handheld::from(check_instructions)
+                .run()
+                .map_err(Error::HandheldRun)?;
+
+            Ok(handheld)
+        }
+
+        pub fn run(&mut self) -> Result<Handheld, Error> {
+            for (replace_index, _) in &self.to_check {
+                if let Ok(out) = self.step(*replace_index) {
+                    return Ok(out);
+                }
+            }
+
+            todo!()
+        }
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        mod step {
+            #[test]
+            fn single_instruction() {
+                const INPUT: &str = "jmp +0";
+                let handlheld = INPUT.parse::<super::Handheld>().expect("invalid input");
+                let fixer = super::Fixer::from(handlheld);
+
+                let expected = 0;
+                let got = fixer.step(0).expect("step failure").accumulator;
+
+                assert_eq!(expected, got);
+            }
+
+            #[test]
+            fn two_instruction() {
+                const INPUT: &str = "jmp +0\nacc +42";
+                let handlheld = INPUT.parse::<super::Handheld>().expect("invalid input");
+                let fixer = super::Fixer::from(handlheld);
+
+                let expected = 42;
+                let got = fixer.step(0).expect("step failure").accumulator;
+
+                assert_eq!(expected, got);
+            }
+
+            #[test]
+            fn input_example_1() {
+                const INPUT: &str = include_str!("input_example1.txt");
+                let handlheld = INPUT.parse::<super::Handheld>().expect("invalid input");
+                let fixer = super::Fixer::from(handlheld);
+
+                let expected = 8;
+                let got = fixer.step(7).expect("step failure").accumulator;
+
+                assert_eq!(expected, got);
+            }
+        }
+
+        mod run {
+            #[test]
+            fn input_example_1() {
+                const INPUT: &str = include_str!("input_example1.txt");
+                let handlheld = INPUT.parse::<super::Handheld>().expect("invalid input");
+                let mut fixer = super::Fixer::from(handlheld);
+
+                let expected = 8;
+                let got = fixer.run().expect("step failure").accumulator;
+
+                assert_eq!(expected, got);
+            }
+        }
+    }
+}
+
 mod instruction {
     use thiserror::Error;
 
-    #[allow(clippy::empty_enum)]
     #[derive(Debug, Error)]
     pub enum Error {
         #[error("invalid instruction found while parsing: {0}")]
@@ -173,7 +314,7 @@ mod instruction {
         JmpArg(std::num::ParseIntError),
     }
 
-    #[derive(Debug, Eq, PartialEq)]
+    #[derive(Debug, Eq, PartialEq, Clone, Copy)]
     pub enum Instruction {
         /// Increase or decrease the accumulator of the handlheld by the isize.
         Acc(isize),
@@ -205,6 +346,12 @@ mod instruction {
 
                 _ => Err(Error::Instruction(s.to_string())),
             }
+        }
+    }
+
+    impl Instruction {
+        pub fn is_jmp(&self) -> bool {
+            matches!(self, Self::Jmp(_))
         }
     }
 

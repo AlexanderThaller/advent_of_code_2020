@@ -2,9 +2,11 @@ use thiserror::Error;
 
 mod handheld;
 
-use handheld::Handheld;
+use handheld::{
+    fixer::Fixer,
+    Handheld,
+};
 
-#[allow(clippy::empty_enum)]
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("problem while parsing handheld: {0}")]
@@ -25,13 +27,21 @@ pub fn part_1() -> Result<isize, Error> {
     const INPUT: &str = include_str!("input.txt");
 
     let handlheld = INPUT.parse::<Handheld>().map_err(Error::HandheldParse)?;
-    let acc = handlheld.run().map_err(Error::HandheldRun)?.accumulator;
+    let acc = match handlheld.run() {
+        Ok(h) | Err(handheld::Error::LoopFound(h)) => h.accumulator,
+        Err(err) => return Err(Error::HandheldRun(err)),
+    };
 
     Ok(acc)
 }
 
-pub fn part_2() -> Result<usize, Error> {
-    Ok(0)
+pub fn part_2() -> Result<isize, Error> {
+    const INPUT: &str = include_str!("input.txt");
+    let handlheld = INPUT.parse::<Handheld>().map_err(Error::HandheldParse)?;
+    let mut fixer = Fixer::from(handlheld);
+    let acc = fixer.run().expect("step failure").accumulator;
+
+    Ok(acc)
 }
 
 #[cfg(test)]
@@ -46,7 +56,7 @@ mod test {
 
     #[test]
     fn part_2() {
-        let expected = 0;
+        let expected = 2477;
         let got = super::part_2().unwrap();
 
         assert_eq!(expected, got)
