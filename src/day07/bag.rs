@@ -22,6 +22,10 @@ impl Bags {
             .collect()
     }
 
+    fn find_bag(&self, for_bag_color: &str) -> Option<&Bag> {
+        self.0.iter().find(|bag| bag.color == for_bag_color)
+    }
+
     pub fn find_all_containers(&self, for_bag_color: &str) -> HashSet<String> {
         self.find_containers(for_bag_color)
             .into_iter()
@@ -32,6 +36,37 @@ impl Bags {
                 parents
             })
             .collect()
+    }
+
+    pub fn must_contain(&self, for_bag_color: &str) -> Vec<(String, usize)> {
+        let mut out = Vec::new();
+
+        if let Some(bag) = self.find_bag(for_bag_color) {
+            for (color, count) in &bag.can_contain {
+                out.push((color.clone(), *count));
+                out.append(&mut self.must_contain_recurse(color, *count))
+            }
+        }
+
+        out
+    }
+
+    fn must_contain_recurse(
+        &self,
+        for_bag_color: &str,
+        parent_count: usize,
+    ) -> Vec<(String, usize)> {
+        let mut out = Vec::new();
+
+        if let Some(bag) = self.find_bag(for_bag_color) {
+            for (color, count) in &bag.can_contain {
+                let new_count = *count * parent_count;
+                out.push((color.clone(), new_count));
+                out.append(&mut self.must_contain_recurse(color, new_count))
+            }
+        }
+
+        out
     }
 }
 
@@ -48,7 +83,7 @@ impl From<Vec<Bag>> for Bags {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-struct Bag {
+pub struct Bag {
     color: String,
     can_contain: HashMap<String, usize>,
 }
@@ -78,9 +113,8 @@ impl std::str::FromStr for Bag {
                             }
                         }
 
-                        b => {
-                            dbg!(b);
-                            todo!()
+                        _ => {
+                            unreachable!()
                         }
                     })
                     .collect::<HashMap<_, _>>();
@@ -93,9 +127,8 @@ impl std::str::FromStr for Bag {
 
             [] => Err(Error::InvalidInput),
 
-            a => {
-                dbg!(a);
-                todo!()
+            _ => {
+                unreachable!()
             }
         }
     }
@@ -105,6 +138,103 @@ impl std::str::FromStr for Bag {
 mod test {
     use super::*;
 
+    mod must_contain {
+        #[test]
+        fn contain() {
+            const INPUT: &str =
+                "shiny gold bags contain 1 muted blue bag\nmuted blue bags contain no other bags.";
+
+            let expected = vec![("muted blue".into(), 1)];
+            let got = super::Bags::from(INPUT).must_contain("shiny gold");
+
+            assert_eq!(expected, got)
+        }
+
+        #[test]
+        fn contain_contain() {
+            const INPUT: &str = "shiny gold bags contain 1 muted blue bag\nmuted blue bags \
+                                 contain 1 muted yellow bag\nmuted yellow bags contain no other \
+                                 bags.";
+
+            let expected = vec![("muted blue".into(), 1), ("muted yellow".into(), 1)];
+            let got = super::Bags::from(INPUT).must_contain("shiny gold");
+
+            assert_eq!(expected, got)
+        }
+
+        #[test]
+        fn contain_contain_contain() {
+            const INPUT: &str = "shiny gold bags contain 1 muted blue bag\nmuted blue bags \
+                                 contain 1 muted yellow bag\nmuted yellow bags contain 1 muted \
+                                 green bag\nmuted green bags contain no other bags.";
+
+            let expected = vec![
+                ("muted blue".into(), 1),
+                ("muted yellow".into(), 1),
+                ("muted green".into(), 1),
+            ];
+            let got = super::Bags::from(INPUT).must_contain("shiny gold");
+
+            assert_eq!(expected, got)
+        }
+
+        #[test]
+        fn example() {
+            const INPUT: &str = include_str!("input_example.txt");
+            let mut expected = vec![
+                ("vibrant plum".into(), 2),
+                ("faded blue".into(), 10),
+                ("dotted black".into(), 12),
+                ("dark olive".into(), 1),
+                ("dotted black".into(), 4),
+                ("faded blue".into(), 3),
+            ];
+            expected.sort();
+
+            let expected_count = 32;
+
+            let mut got = super::Bags::from(INPUT).must_contain("shiny gold");
+            got.sort();
+
+            let got_count = super::Bags::from(INPUT)
+                .must_contain("shiny gold")
+                .into_iter()
+                .map(|(_, count)| count)
+                .sum::<usize>();
+
+            assert_eq!(expected, got);
+            assert_eq!(expected_count, got_count)
+        }
+
+        #[test]
+        fn example2() {
+            const INPUT: &str = include_str!("input_example2.txt");
+            let mut expected = vec![
+                ("dark red".into(), 2),
+                ("dark orange".into(), 4),
+                ("dark yellow".into(), 8),
+                ("dark green".into(), 16),
+                ("dark blue".into(), 32),
+                ("dark violet".into(), 64),
+            ];
+            expected.sort();
+
+            let expected_count = 126;
+
+            let mut got = super::Bags::from(INPUT).must_contain("shiny gold");
+            got.sort();
+
+            let got_count = super::Bags::from(INPUT)
+                .must_contain("shiny gold")
+                .into_iter()
+                .map(|(_, count)| count)
+                .sum::<usize>();
+
+            assert_eq!(expected, got);
+            assert_eq!(expected_count, got_count)
+        }
+    }
+
     mod find_all_containers {
         #[test]
         fn contain_contain() {
@@ -112,7 +242,9 @@ mod test {
                                  contain 1 muted yellow bag";
 
             let expected = 2;
-            let got = dbg!(super::Bags::from(INPUT).find_all_containers("shiny gold")).len();
+            let got = super::Bags::from(INPUT)
+                .find_all_containers("shiny gold")
+                .len();
 
             assert_eq!(expected, got)
         }
@@ -124,11 +256,14 @@ mod test {
                                  blue bag";
 
             let expected = 3;
-            let got = dbg!(super::Bags::from(INPUT).find_all_containers("shiny gold")).len();
+            let got = super::Bags::from(INPUT)
+                .find_all_containers("shiny gold")
+                .len();
 
             assert_eq!(expected, got)
         }
 
+        #[test]
         fn example() {
             const INPUT: &str = include_str!("input_example.txt");
             let expected = 4;

@@ -9,8 +9,11 @@ use bag::Bags;
 pub enum Error {}
 
 pub fn run() -> Result<(), Error> {
-    println!("template::part_1: value = {}", part_1()?);
-    println!("template::part_2: value = {}", part_2()?);
+    println!("template::part_1: contain shiny gold bag = {}", part_1()?);
+    println!(
+        "template::part_2: need to be in shiny gold bag = {}",
+        part_2()?
+    );
 
     Ok(())
 }
@@ -24,7 +27,13 @@ pub fn part_1() -> Result<usize, Error> {
 }
 
 pub fn part_2() -> Result<usize, Error> {
-    Ok(0)
+    let count = Bags::from(include_str!("input.txt"))
+        .must_contain("shiny gold")
+        .into_iter()
+        .map(|(_, count)| count)
+        .sum::<usize>();
+
+    Ok(count)
 }
 
 #[cfg(test)]
@@ -39,7 +48,7 @@ mod test {
 
     #[test]
     fn part_2() {
-        let expected = 0;
+        let expected = 155802;
         let got = super::part_2().unwrap();
 
         assert_eq!(expected, got)
