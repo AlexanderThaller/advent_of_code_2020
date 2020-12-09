@@ -11,6 +11,7 @@ anyhow = "1"
 itertools = "0.9"
 scan_fmt = "0.2"
 thiserror = "1"
+rayon = "1"
 
 [profile.bench]
 codegen-units = 1

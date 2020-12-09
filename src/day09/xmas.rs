@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::prelude::*;
 use thiserror::Error;
 
 #[allow(clippy::empty_enum)]
@@ -59,8 +60,10 @@ impl Xmas {
 
         (0..self.preamble.len())
             .collect::<Vec<_>>()
-            .iter()
-            .find_map(|candidate_index| self.check_candidate(invalid_number, *candidate_index))
+            .par_iter()
+            .find_map_first(|candidate_index| {
+                self.check_candidate(invalid_number, *candidate_index)
+            })
     }
 
     fn check_candidate(&self, invalid_number: usize, candidate_index: usize) -> Option<Vec<usize>> {
