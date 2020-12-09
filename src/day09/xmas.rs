@@ -54,27 +54,32 @@ impl Xmas {
             .any(|(first, second)| *first + *second == n)
     }
 
-    pub fn find_contiguous_set(mut self, invalid_number: usize) -> Vec<usize> {
+    pub fn find_contiguous_set(mut self, invalid_number: usize) -> Option<Vec<usize>> {
         self.preamble.append(&mut self.to_check);
 
-        for candidate in 0..self.preamble.len() {
-            let mut tmp = Vec::new();
-            for index in candidate..self.preamble.len() {
-                tmp.push(self.preamble[index]);
+        (0..self.preamble.len())
+            .collect::<Vec<_>>()
+            .iter()
+            .find_map(|candidate_index| self.check_candidate(invalid_number, *candidate_index))
+    }
 
-                let sum = tmp.iter().sum::<usize>();
+    fn check_candidate(&self, invalid_number: usize, candidate_index: usize) -> Option<Vec<usize>> {
+        let mut tmp = Vec::new();
+        for index in candidate_index..self.preamble.len() {
+            tmp.push(self.preamble[index]);
 
-                if sum == invalid_number {
-                    return tmp;
-                }
+            let sum = tmp.iter().sum::<usize>();
 
-                if sum > invalid_number {
-                    break;
-                }
+            if sum == invalid_number {
+                return Some(tmp);
+            }
+
+            if sum > invalid_number {
+                break;
             }
         }
 
-        todo!()
+        None
     }
 }
 
@@ -140,7 +145,7 @@ mod test {
         ];
         const INVALID_NUMBER: usize = 127;
 
-        let expected = vec![15, 25, 47, 40];
+        let expected = Some(vec![15, 25, 47, 40]);
 
         let xmas = super::Xmas::new(INPUT.to_vec(), 5);
         let got = xmas.find_contiguous_set(INVALID_NUMBER);

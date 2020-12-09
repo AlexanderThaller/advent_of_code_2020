@@ -12,6 +12,9 @@ pub enum Error {
 
     #[error("did not find invalid number in input")]
     NoInvalidNumberFound,
+
+    #[error("did't find a contiguous set")]
+    NoContiguousSetFound,
 }
 
 pub fn run() -> Result<(), Error> {
@@ -44,7 +47,10 @@ pub fn part_2() -> Result<usize, Error> {
     let mut xmas = Xmas::new(input, 25);
     let invalid = xmas.find_invalid().ok_or(Error::NoInvalidNumberFound)?;
 
-    let mut contiguous_set = xmas.find_contiguous_set(invalid);
+    let mut contiguous_set = xmas
+        .find_contiguous_set(invalid)
+        .ok_or(Error::NoContiguousSetFound)?;
+
     contiguous_set.sort_unstable();
 
     let weakness = contiguous_set[0] + contiguous_set[contiguous_set.len() - 1];
@@ -64,7 +70,7 @@ mod test {
 
     #[test]
     fn part_2() {
-        let expected = 5388976;
+        let expected = 5_388_976;
         let got = super::part_2().unwrap();
 
         assert_eq!(expected, got)
