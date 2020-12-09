@@ -16,7 +16,7 @@ pub enum Error {
 
 pub fn run() -> Result<(), Error> {
     println!("template::part_1: first invalid number = {}", part_1()?);
-    println!("template::part_2: value = {}", part_2()?);
+    println!("template::part_2: weakness = {}", part_2()?);
 
     Ok(())
 }
@@ -35,7 +35,21 @@ pub fn part_1() -> Result<usize, Error> {
 }
 
 pub fn part_2() -> Result<usize, Error> {
-    Ok(0)
+    let input = include_str!("input.txt")
+        .lines()
+        .map(str::parse)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(Error::InvalidNumberInInput)?;
+
+    let mut xmas = Xmas::new(input, 25);
+    let invalid = xmas.find_invalid().ok_or(Error::NoInvalidNumberFound)?;
+
+    let mut contiguous_set = xmas.find_contiguous_set(invalid);
+    contiguous_set.sort_unstable();
+
+    let weakness = contiguous_set[0] + contiguous_set[contiguous_set.len() - 1];
+
+    Ok(weakness)
 }
 
 #[cfg(test)]
@@ -50,7 +64,7 @@ mod test {
 
     #[test]
     fn part_2() {
-        let expected = 0;
+        let expected = 5388976;
         let got = super::part_2().unwrap();
 
         assert_eq!(expected, got)

@@ -53,6 +53,29 @@ impl Xmas {
             .tuple_combinations()
             .any(|(first, second)| *first + *second == n)
     }
+
+    pub fn find_contiguous_set(mut self, invalid_number: usize) -> Vec<usize> {
+        self.preamble.append(&mut self.to_check);
+
+        for candidate in 0..self.preamble.len() {
+            let mut tmp = Vec::new();
+            for index in candidate..self.preamble.len() {
+                tmp.push(self.preamble[index]);
+
+                let sum = tmp.iter().sum::<usize>();
+
+                if sum == invalid_number {
+                    return tmp;
+                }
+
+                if sum > invalid_number {
+                    break;
+                }
+            }
+        }
+
+        todo!()
+    }
 }
 
 #[cfg(test)]
@@ -105,6 +128,22 @@ mod test {
         let expected = Some(127);
 
         let got = xmas.find_invalid();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn second_example_find_contiguous_set() {
+        const INPUT: [usize; 20] = [
+            35, 20, 15, 25, 47, 40, 62, 55, 65, 95, 102, 117, 150, 182, 127, 219, 299, 277, 309,
+            576,
+        ];
+        const INVALID_NUMBER: usize = 127;
+
+        let expected = vec![15, 25, 47, 40];
+
+        let xmas = super::Xmas::new(INPUT.to_vec(), 5);
+        let got = xmas.find_contiguous_set(INVALID_NUMBER);
 
         assert_eq!(expected, got);
     }
